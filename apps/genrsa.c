@@ -30,28 +30,38 @@ NON_EMPTY_TRANSLATION_UNIT
 # define DEFBITS 2048
 # define DEFPRIMES 2
 
+static int verbose = 0;
+
 static int genrsa_cb(int p, int n, BN_GENCB *cb);
 
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
     OPT_3, OPT_F4, OPT_ENGINE,
-    OPT_OUT, OPT_PASSOUT, OPT_CIPHER, OPT_PRIMES,
+    OPT_OUT, OPT_PASSOUT, OPT_CIPHER, OPT_PRIMES, OPT_VERBOSE,
     OPT_R_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS genrsa_options[] = {
+
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
-    {"3", OPT_3, '-', "Use 3 for the E value"},
-    {"F4", OPT_F4, '-', "Use F4 (0x10001) for the E value"},
-    {"f4", OPT_F4, '-', "Use F4 (0x10001) for the E value"},
-    {"out", OPT_OUT, '>', "Output the key to specified file"},
-    OPT_R_OPTIONS,
-    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
-    {"", OPT_CIPHER, '-', "Encrypt the output with any supported cipher"},
 # ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
 # endif
+
+    OPT_SECTION("Input"),
+    {"3", OPT_3, '-', "Use 3 for the E value"},
+    {"F4", OPT_F4, '-', "Use F4 (0x10001) for the E value"},
+    {"f4", OPT_F4, '-', "Use F4 (0x10001) for the E value"},
+
+    OPT_SECTION("Output"),
+    {"out", OPT_OUT, '>', "Output the key to specified file"},
+    {"passout", OPT_PASSOUT, 's', "Output file pass phrase source"},
     {"primes", OPT_PRIMES, 'p', "Specify number of primes"},
+    {"verbose", OPT_VERBOSE, '-', "Verbose output"},
+    {"", OPT_CIPHER, '-', "Encrypt the output with any supported cipher"},
+
+    OPT_R_OPTIONS,
     {NULL}
 };
 
@@ -115,6 +125,9 @@ opthelp:
             if (!opt_int(opt_arg(), &primes))
                 goto end;
             break;
+        case OPT_VERBOSE:
+            verbose = 1;
+            break;
         }
     }
     argc = opt_num_rest();
@@ -143,8 +156,9 @@ opthelp:
     if (out == NULL)
         goto end;
 
-    BIO_printf(bio_err, "Generating RSA private key, %d bit long modulus (%d primes)\n",
-               num, primes);
+    if (verbose)
+        BIO_printf(bio_err, "Generating RSA private key, %d bit long modulus (%d primes)\n",
+                   num, primes);
     rsa = eng ? RSA_new_method(eng) : RSA_new();
     if (rsa == NULL)
         goto end;
@@ -156,7 +170,7 @@ opthelp:
     RSA_get0_key(rsa, NULL, &e, NULL);
     hexe = BN_bn2hex(e);
     dece = BN_bn2dec(e);
-    if (hexe && dece) {
+    if (hexe && dece && verbose) {
         BIO_printf(bio_err, "e is %s (0x%s)\n", dece, hexe);
     }
     OPENSSL_free(hexe);
@@ -185,6 +199,9 @@ opthelp:
 static int genrsa_cb(int p, int n, BN_GENCB *cb)
 {
     char c = '*';
+
+    if (!verbose)
+        return 1;
 
     if (p == 0)
         c = '.';

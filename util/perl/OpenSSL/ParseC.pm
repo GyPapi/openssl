@@ -65,11 +65,14 @@ my @opensslcpphandlers = (
     # These are used to convert certain pre-precessor expressions into
     # others that @cpphandlers have a better chance to understand.
 
-    { regexp   => qr/#if (!?)OPENSSL_API_([0-9_]+)$/,
+    # This changes any OPENSSL_NO_DEPRECATED_x_y[_z] check to a check of
+    # OPENSSL_NO_DEPRECATEDIN_x_y[_z].  That's due to <openssl/macros.h>
+    # creating OPENSSL_NO_DEPRECATED_x_y[_z], but the ordinals files using
+    # DEPRECATEDIN_x_y[_z].
+    { regexp   => qr/#if(def|ndef) OPENSSL_NO_DEPRECATED_(\d+_\d+(?:_\d+)?)$/,
       massager => sub {
-          my $cnd = $1 eq '!' ? 'ndef' : 'def';
           return (<<"EOF");
-#if$cnd DEPRECATEDIN_$2
+#if$1 OPENSSL_NO_DEPRECATEDIN_$2
 EOF
       }
    }
@@ -256,25 +259,12 @@ my @opensslchandlers = (
     # an error.
 
     #####
-    # Global variable stuff
-    { regexp   => qr/OPENSSL_DECLARE_GLOBAL<<<\((.*),\s*(.*)\)>>>;/,
-      massager => sub { return (<<"EOF");
-#ifndef OPENSSL_EXPORT_VAR_AS_FUNCTION
-OPENSSL_EXPORT $1 _shadow_$2;
-#else
-$1 *_shadow_$2(void);
-#endif
-EOF
-      },
-    },
-
-    #####
     # Deprecated stuff, by OpenSSL release.
 
     # We trick the parser by pretending that the declaration is wrapped in a
     # check if the DEPRECATEDIN macro is defined or not.  Callers of parse()
     # will have to decide what to do with it.
-    { regexp   => qr/(DEPRECATEDIN_\d+(?:_\d+_\d+)?)<<<\((.*)\)>>>/,
+    { regexp   => qr/(DEPRECATEDIN_\d+_\d+(?:_\d+)?)<<<\((.*)\)>>>/,
       massager => sub { return (<<"EOF");
 #ifndef $1
 $2;
@@ -413,11 +403,7 @@ EOF
     { regexp   => qr/DECLARE_ASN1_ITEM<<<\((.*)\)>>>/,
       massager => sub {
           return (<<"EOF");
-#ifndef OPENSSL_EXPORT_VAR_AS_FUNCTION
-OPENSSL_EXTERN const ASN1_ITEM *$1_it;
-#else
 const ASN1_ITEM *$1_it(void);
-#endif
 EOF
       },
     },
@@ -575,7 +561,7 @@ my @chandlers = (
     # Note that the main parse function has a special hack for 'extern "C" {'
     # which can't be done in handlers
     # We simply ignore it.
-    { regexp   => qr/extern "C" (.*;)/,
+    { regexp   => qr/^extern "C" (.*(?:;|>>>))/,
       massager => sub { return ($1); },
     },
     # any other extern is just ignored

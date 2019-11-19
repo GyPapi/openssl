@@ -37,25 +37,16 @@ typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
     OPT_INFORM, OPT_OUTFORM, OPT_IN, OPT_OUT,
     OPT_ENGINE, OPT_CHECK, OPT_TEXT, OPT_NOOUT,
-    OPT_DSAPARAM, OPT_C, OPT_2, OPT_5,
+    OPT_DSAPARAM, OPT_C, OPT_2, OPT_3, OPT_5,
     OPT_R_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS dhparam_options[] = {
     {OPT_HELP_STR, 1, '-', "Usage: %s [flags] [numbits]\n"},
-    {OPT_HELP_STR, 1, '-', "Valid options are:\n"},
+
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
-    {"in", OPT_IN, '<', "Input file"},
-    {"inform", OPT_INFORM, 'F', "Input format, DER or PEM"},
-    {"outform", OPT_OUTFORM, 'F', "Output format, DER or PEM"},
-    {"out", OPT_OUT, '>', "Output file"},
     {"check", OPT_CHECK, '-', "Check the DH parameters"},
-    {"text", OPT_TEXT, '-', "Print a text form of the DH parameters"},
-    {"noout", OPT_NOOUT, '-', "Don't output any DH parameters"},
-    OPT_R_OPTIONS,
-    {"C", OPT_C, '-', "Print C code"},
-    {"2", OPT_2, '-', "Generate parameters using 2 as the generator value"},
-    {"5", OPT_5, '-', "Generate parameters using 5 as the generator value"},
 # ifndef OPENSSL_NO_DSA
     {"dsaparam", OPT_DSAPARAM, '-',
      "Read or generate DSA parameters, convert to DH"},
@@ -63,6 +54,22 @@ const OPTIONS dhparam_options[] = {
 # ifndef OPENSSL_NO_ENGINE
     {"engine", OPT_ENGINE, 's', "Use engine e, possibly a hardware device"},
 # endif
+
+    OPT_SECTION("Input"),
+    {"in", OPT_IN, '<', "Input file"},
+    {"inform", OPT_INFORM, 'F', "Input format, DER or PEM"},
+
+    OPT_SECTION("Output"),
+    {"out", OPT_OUT, '>', "Output file"},
+    {"outform", OPT_OUTFORM, 'F', "Output format, DER or PEM"},
+    {"text", OPT_TEXT, '-', "Print a text form of the DH parameters"},
+    {"noout", OPT_NOOUT, '-', "Don't output any DH parameters"},
+    {"C", OPT_C, '-', "Print C code"},
+    {"2", OPT_2, '-', "Generate parameters using 2 as the generator value"},
+    {"3", OPT_3, '-', "Generate parameters using 3 as the generator value"},
+    {"5", OPT_5, '-', "Generate parameters using 5 as the generator value"},
+
+    OPT_R_OPTIONS,
     {NULL}
 };
 
@@ -124,6 +131,9 @@ int dhparam_main(int argc, char **argv)
             break;
         case OPT_2:
             g = 2;
+            break;
+        case OPT_3:
+            g = 3;
             break;
         case OPT_5:
             g = 5;

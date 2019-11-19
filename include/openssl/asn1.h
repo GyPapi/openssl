@@ -7,8 +7,14 @@
  * https://www.openssl.org/source/license.html
  */
 
-#ifndef HEADER_ASN1_H
-# define HEADER_ASN1_H
+#ifndef OPENSSL_ASN1_H
+# define OPENSSL_ASN1_H
+# pragma once
+
+# include <openssl/macros.h>
+# ifndef OPENSSL_NO_DEPRECATED_3_0
+#  define HEADER_ASN1_H
+# endif
 
 # include <time.h>
 # include <openssl/e_os2.h>
@@ -18,10 +24,8 @@
 # include <openssl/asn1err.h>
 # include <openssl/symhacks.h>
 
-# include <openssl/ossl_typ.h>
-# if !OPENSSL_API_1_1_0
-#  include <openssl/bn.h>
-# endif
+# include <openssl/types.h>
+# include <openssl/bn.h>
 
 # ifdef OPENSSL_BUILD_SHLIBCRYPTO
 #  undef OPENSSL_EXTERN
@@ -310,23 +314,6 @@ TYPEDEF_D2I2D_OF(void);
  *
  */
 
-# ifndef OPENSSL_EXPORT_VAR_AS_FUNCTION
-
-/* ASN1_ITEM pointer exported type */
-typedef const ASN1_ITEM ASN1_ITEM_EXP;
-
-/* Macro to obtain ASN1_ITEM pointer from exported type */
-#  define ASN1_ITEM_ptr(iptr) (iptr)
-
-/* Macro to include ASN1_ITEM pointer from base type */
-#  define ASN1_ITEM_ref(iptr) (&(iptr##_it))
-
-#  define ASN1_ITEM_rptr(ref) (&(ref##_it))
-
-#  define DECLARE_ASN1_ITEM(name) \
-        OPENSSL_EXTERN const ASN1_ITEM name##_it;
-
-# else
 
 /*
  * Platforms that can't easily handle shared global variables are declared as
@@ -337,17 +324,15 @@ typedef const ASN1_ITEM ASN1_ITEM_EXP;
 typedef const ASN1_ITEM *ASN1_ITEM_EXP (void);
 
 /* Macro to obtain ASN1_ITEM pointer from exported type */
-#  define ASN1_ITEM_ptr(iptr) (iptr())
+# define ASN1_ITEM_ptr(iptr) (iptr())
 
 /* Macro to include ASN1_ITEM pointer from base type */
-#  define ASN1_ITEM_ref(iptr) (iptr##_it)
+# define ASN1_ITEM_ref(iptr) (iptr##_it)
 
-#  define ASN1_ITEM_rptr(ref) (ref##_it())
+# define ASN1_ITEM_rptr(ref) (ref##_it())
 
-#  define DECLARE_ASN1_ITEM(name) \
+# define DECLARE_ASN1_ITEM(name) \
         const ASN1_ITEM * name##_it(void);
-
-# endif
 
 /* Parameters used by ASN1_STRING_print_ex() */
 

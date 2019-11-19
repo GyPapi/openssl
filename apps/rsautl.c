@@ -31,38 +31,44 @@ NON_EMPTY_TRANSLATION_UNIT
 typedef enum OPTION_choice {
     OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
     OPT_ENGINE, OPT_IN, OPT_OUT, OPT_ASN1PARSE, OPT_HEXDUMP,
-    OPT_RAW, OPT_OAEP, OPT_SSL, OPT_PKCS, OPT_X931,
+    OPT_RSA_RAW, OPT_OAEP, OPT_SSL, OPT_PKCS, OPT_X931,
     OPT_SIGN, OPT_VERIFY, OPT_REV, OPT_ENCRYPT, OPT_DECRYPT,
     OPT_PUBIN, OPT_CERTIN, OPT_INKEY, OPT_PASSIN, OPT_KEYFORM,
     OPT_R_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS rsautl_options[] = {
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
+    {"sign", OPT_SIGN, '-', "Sign with private key"},
+    {"verify", OPT_VERIFY, '-', "Verify with public key"},
+    {"encrypt", OPT_ENCRYPT, '-', "Encrypt with public key"},
+    {"decrypt", OPT_DECRYPT, '-', "Decrypt with private key"},
+# ifndef OPENSSL_NO_ENGINE
+    {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
+# endif
+
+    OPT_SECTION("Input"),
     {"in", OPT_IN, '<', "Input file"},
-    {"out", OPT_OUT, '>', "Output file"},
     {"inkey", OPT_INKEY, 's', "Input key"},
     {"keyform", OPT_KEYFORM, 'E', "Private key format - default PEM"},
     {"pubin", OPT_PUBIN, '-', "Input is an RSA public"},
     {"certin", OPT_CERTIN, '-', "Input is a cert carrying an RSA public key"},
+    {"rev", OPT_REV, '-', "Reverse the order of the input buffer"},
+    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
+
+    OPT_SECTION("Output"),
+    {"out", OPT_OUT, '>', "Output file"},
     {"ssl", OPT_SSL, '-', "Use SSL v2 padding"},
-    {"raw", OPT_RAW, '-', "Use no padding"},
+    {"raw", OPT_RSA_RAW, '-', "Use no padding"},
     {"pkcs", OPT_PKCS, '-', "Use PKCS#1 v1.5 padding (default)"},
+    {"x931", OPT_X931, '-', "Use ANSI X9.31 padding"},
     {"oaep", OPT_OAEP, '-', "Use PKCS#1 OAEP"},
-    {"sign", OPT_SIGN, '-', "Sign with private key"},
-    {"verify", OPT_VERIFY, '-', "Verify with public key"},
     {"asn1parse", OPT_ASN1PARSE, '-',
      "Run output through asn1parse; useful with -verify"},
     {"hexdump", OPT_HEXDUMP, '-', "Hex dump output"},
-    {"x931", OPT_X931, '-', "Use ANSI X9.31 padding"},
-    {"rev", OPT_REV, '-', "Reverse the order of the input buffer"},
-    {"encrypt", OPT_ENCRYPT, '-', "Encrypt with public key"},
-    {"decrypt", OPT_DECRYPT, '-', "Decrypt with private key"},
-    {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
+
     OPT_R_OPTIONS,
-# ifndef OPENSSL_NO_ENGINE
-    {"engine", OPT_ENGINE, 's', "Use engine, possibly a hardware device"},
-# endif
     {NULL}
 };
 
@@ -112,7 +118,7 @@ int rsautl_main(int argc, char **argv)
         case OPT_HEXDUMP:
             hexdump = 1;
             break;
-        case OPT_RAW:
+        case OPT_RSA_RAW:
             pad = RSA_NO_PADDING;
             break;
         case OPT_OAEP:

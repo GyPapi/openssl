@@ -8,11 +8,17 @@
  * https://www.openssl.org/source/license.html
  */
 
-#ifndef HEADER_X509_H
-# define HEADER_X509_H
+#ifndef OPENSSL_X509_H
+# define OPENSSL_X509_H
+# pragma once
+
+# include <openssl/macros.h>
+# ifndef OPENSSL_NO_DEPRECATED_3_0
+#  define HEADER_X509_H
+# endif
 
 # include <openssl/e_os2.h>
-# include <openssl/ossl_typ.h>
+# include <openssl/types.h>
 # include <openssl/symhacks.h>
 # include <openssl/buffer.h>
 # include <openssl/evp.h>
@@ -21,7 +27,7 @@
 # include <openssl/safestack.h>
 # include <openssl/ec.h>
 
-# if !OPENSSL_API_1_1_0
+# ifndef OPENSSL_NO_DEPRECATED_1_1_0
 #  include <openssl/rsa.h>
 #  include <openssl/dsa.h>
 #  include <openssl/dh.h>
@@ -466,12 +472,13 @@ int i2d_PUBKEY_bio(BIO *bp, const EVP_PKEY *pkey);
 EVP_PKEY *d2i_PUBKEY_bio(BIO *bp, EVP_PKEY **a);
 
 DECLARE_ASN1_DUP_FUNCTION(X509)
-DECLARE_ASN1_DUP_FUNCTION(X509_ATTRIBUTE)
-DECLARE_ASN1_DUP_FUNCTION(X509_EXTENSION)
-DECLARE_ASN1_DUP_FUNCTION(X509_CRL)
-DECLARE_ASN1_DUP_FUNCTION(X509_REVOKED)
-DECLARE_ASN1_DUP_FUNCTION(X509_REQ)
 DECLARE_ASN1_DUP_FUNCTION(X509_ALGOR)
+DECLARE_ASN1_DUP_FUNCTION(X509_ATTRIBUTE)
+DECLARE_ASN1_DUP_FUNCTION(X509_CRL)
+DECLARE_ASN1_DUP_FUNCTION(X509_EXTENSION)
+DECLARE_ASN1_DUP_FUNCTION(X509_PUBKEY)
+DECLARE_ASN1_DUP_FUNCTION(X509_REQ)
+DECLARE_ASN1_DUP_FUNCTION(X509_REVOKED)
 int X509_ALGOR_set0(X509_ALGOR *alg, ASN1_OBJECT *aobj, int ptype,
                     void *pval);
 void X509_ALGOR_get0(const ASN1_OBJECT **paobj, int *pptype,
@@ -569,6 +576,8 @@ int X509_get_signature_nid(const X509 *x);
 # ifndef OPENSSL_NO_SM2
 void X509_set0_sm2_id(X509 *x, ASN1_OCTET_STRING *sm2_id);
 ASN1_OCTET_STRING *X509_get0_sm2_id(X509 *x);
+void X509_REQ_set0_sm2_id(X509_REQ *x, ASN1_OCTET_STRING *sm2_id);
+ASN1_OCTET_STRING *X509_REQ_get0_sm2_id(X509_REQ *x);
 # endif
 
 int X509_trusted(const X509 *x);
@@ -649,7 +658,7 @@ int X509_set_pubkey(X509 *x, EVP_PKEY *pkey);
 int X509_up_ref(X509 *x);
 int X509_get_signature_type(const X509 *x);
 
-# if !OPENSSL_API_1_1_0
+# ifndef OPENSSL_NO_DEPRECATED_1_1_0
 #  define X509_get_notBefore X509_getm_notBefore
 #  define X509_get_notAfter X509_getm_notAfter
 #  define X509_set_notBefore X509_set1_notBefore
@@ -715,7 +724,7 @@ int X509_CRL_set1_nextUpdate(X509_CRL *x, const ASN1_TIME *tm);
 int X509_CRL_sort(X509_CRL *crl);
 int X509_CRL_up_ref(X509_CRL *crl);
 
-# if !OPENSSL_API_1_1_0
+# ifndef OPENSSL_NO_DEPRECATED_1_1_0
 #  define X509_CRL_set_lastUpdate X509_CRL_set1_lastUpdate
 #  define X509_CRL_set_nextUpdate X509_CRL_set1_nextUpdate
 #endif

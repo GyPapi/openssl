@@ -27,7 +27,7 @@
 
 static int openssl_configured = 0;
 
-#if !OPENSSL_API_1_1_0
+#ifndef OPENSSL_NO_DEPRECATED_1_1_0
 void OPENSSL_config(const char *appname)
 {
     OPENSSL_INIT_SETTINGS settings;
@@ -42,7 +42,7 @@ void OPENSSL_config(const char *appname)
 
 int openssl_config_int(const OPENSSL_INIT_SETTINGS *settings)
 {
-    int ret;
+    int ret = 0;
     const char *filename;
     const char *appname;
     unsigned long flags;
