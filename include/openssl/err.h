@@ -112,6 +112,8 @@ struct err_state_st {
 # define ERR_LIB_CRMF            56
 # define ERR_LIB_PROV            57
 # define ERR_LIB_CMP             58
+# define ERR_LIB_OSSL_SERIALIZER 59
+# define ERR_LIB_HTTP            60
 
 # define ERR_LIB_USER            128
 
@@ -139,6 +141,7 @@ struct err_state_st {
 #  define EVPerr(f, r) ERR_raise_data(ERR_LIB_EVP, (r), NULL)
 #  define FIPSerr(f, r) ERR_raise_data(ERR_LIB_FIPS, (r), NULL)
 #  define HMACerr(f, r) ERR_raise_data(ERR_LIB_HMAC, (r), NULL)
+#  define HTTPerr(f, r) ERR_raise_data(ERR_LIB_HTTP, (r), NULL)
 #  define KDFerr(f, r) ERR_raise_data(ERR_LIB_KDF, (r), NULL)
 #  define OBJerr(f, r) ERR_raise_data(ERR_LIB_OBJ, (r), NULL)
 #  define OCSPerr(f, r) ERR_raise_data(ERR_LIB_OCSP, (r), NULL)
@@ -231,6 +234,8 @@ struct err_state_st {
 # define ERR_R_INIT_FAIL                         (6|ERR_R_FATAL)
 # define ERR_R_PASSED_INVALID_ARGUMENT           (7)
 # define ERR_R_OPERATION_FAIL                    (8|ERR_R_FATAL)
+# define ERR_R_INVALID_PROVIDER_FUNCTIONS        (9|ERR_R_FATAL)
+# define ERR_R_INTERRUPTED_OR_CANCELLED          (10)
 
 /*
  * 99 is the maximum possible ERR_R_... code, higher values are reserved for
@@ -328,6 +333,8 @@ void ERR_print_errors(BIO *bp);
 
 void ERR_add_error_data(int num, ...);
 void ERR_add_error_vdata(int num, va_list args);
+void ERR_add_error_txt(const char *sepr, const char *txt);
+void ERR_add_error_mem_bio(const char *sep, BIO *bio);
 
 int ERR_load_strings(int lib, ERR_STRING_DATA *str);
 int ERR_load_strings_const(const ERR_STRING_DATA *str);

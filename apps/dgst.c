@@ -47,8 +47,7 @@ typedef enum OPTION_choice {
 
 const OPTIONS dgst_options[] = {
     {OPT_HELP_STR, 1, '-', "Usage: %s [options] [file...]\n"},
-    {OPT_HELP_STR, 1, '-',
-        "  file... files to digest (default is stdin)\n"},
+
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
     {"list", OPT_LIST, '-', "List digests"},
@@ -83,6 +82,9 @@ const OPTIONS dgst_options[] = {
      "Compute HMAC with the key used in OpenSSL-FIPS fingerprint"},
 
     OPT_R_OPTIONS,
+
+    OPT_PARAMETERS(),
+    {"file", 0, 0, "Files to digest (optional; default is stdin)"},
     {NULL}
 };
 
@@ -539,11 +541,16 @@ int do_fp(BIO *out, unsigned char *buf, BIO *bp, int sep, int binout,
     }
     if (key != NULL) {
         EVP_MD_CTX *ctx;
-        int pkey_len;
+        size_t tmplen;
+
         BIO_get_md_ctx(bp, &ctx);
-        pkey_len = EVP_PKEY_size(key);
-        if (pkey_len > BUFSIZE) {
-            len = pkey_len;
+        if (!EVP_DigestSignFinal(ctx, NULL, &tmplen)) {
+            BIO_printf(bio_err, "Error Signing Data\n");
+            ERR_print_errors(bio_err);
+            goto end;
+        }
+        if (tmplen > BUFSIZE) {
+            len = tmplen;
             sigbuf = app_malloc(len, "Signature buffer");
             buf = sigbuf;
         }

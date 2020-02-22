@@ -75,6 +75,8 @@ static ERR_STRING_DATA ERR_str_libraries[] = {
     {ERR_PACK(ERR_LIB_SM2, 0, 0), "SM2 routines"},
     {ERR_PACK(ERR_LIB_ESS, 0, 0), "ESS routines"},
     {ERR_PACK(ERR_LIB_PROV, 0, 0), "Provider routines"},
+    {ERR_PACK(ERR_LIB_OSSL_SERIALIZER, 0, 0), "SERIALIZER routines"},
+    {ERR_PACK(ERR_LIB_HTTP, 0, 0), "HTTP routines"},
     {0, NULL},
 };
 
@@ -111,6 +113,8 @@ static ERR_STRING_DATA ERR_str_reasons[] = {
     {ERR_R_DISABLED, "called a function that was disabled at compile-time"},
     {ERR_R_INIT_FAIL, "init fail"},
     {ERR_R_OPERATION_FAIL, "operation fail"},
+    {ERR_R_INVALID_PROVIDER_FUNCTIONS, "invalid provider functions"},
+    {ERR_R_INTERRUPTED_OR_CANCELLED, "interrupted or cancelled"},
 
     {0, NULL},
 };

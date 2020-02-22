@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use the deprecated DSA_print */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_NO_DSA
 NON_EMPTY_TRANSLATION_UNIT
@@ -173,6 +176,7 @@ int dsa_main(int argc, char **argv)
             EVP_PKEY_free(pkey);
         }
     }
+
     if (dsa == NULL) {
         BIO_printf(bio_err, "unable to load Key\n");
         ERR_print_errors(bio_err);

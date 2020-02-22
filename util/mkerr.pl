@@ -210,12 +210,6 @@ if ( ! $reindex && $statefile ) {
             print "Skipping $_";
             $skippedstate++;
             next;
-        } elsif ( $hinc{$lib} eq 'NONE' ) {
-            # When the header is NONE but the err file is specified,
-            # it signifies that the err file should be conserved but
-            # remain untouched, and the same goes for the symbols in
-            # the state file.
-            next;
         }
         if ( $name =~ /^(?:OSSL_|OPENSSL_)?[A-Z0-9]{2,}_R_/ ) {
             die "$lib reason code $code collision at $name\n"
@@ -321,7 +315,7 @@ while ( ( my $hdr, my $lib ) = each %libinc ) {
         s/[\n\s]*$//g;
 
         # Skip over recognized non-function declarations
-        next if /typedef\W/ or /DECLARE_STACK_OF/ or /TYPEDEF_.*_OF/;
+        next if /typedef\W/;
 
         # Remove STACK_OF(foo)
         s/STACK_OF\(\w+\)/void/;

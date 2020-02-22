@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use the deprecated RSA low level calls */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_NO_RSA
 NON_EMPTY_TRANSLATION_UNIT
@@ -42,6 +45,7 @@ typedef enum OPTION_choice {
 } OPTION_CHOICE;
 
 const OPTIONS genrsa_options[] = {
+    {OPT_HELP_STR, 1, '-', "Usage: %s [options] numbits\n"},
 
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
@@ -62,6 +66,9 @@ const OPTIONS genrsa_options[] = {
     {"", OPT_CIPHER, '-', "Encrypt the output with any supported cipher"},
 
     OPT_R_OPTIONS,
+
+    OPT_PARAMETERS(),
+    {"numbits", 0, 0, "Size of key in bits"},
     {NULL}
 };
 

@@ -115,14 +115,7 @@ static int acfd = (int) INVALID_SOCKET;
 static int index_changed(CA_DB *);
 static void spawn_loop(void);
 static int print_syslog(const char *str, size_t len, void *levPtr);
-static void sock_timeout(int signum);
-# endif
-
-# ifndef OPENSSL_NO_SOCK
-static OCSP_RESPONSE *query_responder(BIO *cbio, const char *host,
-                                      const char *path,
-                                      const STACK_OF(CONF_VALUE) *headers,
-                                      OCSP_REQUEST *req, int req_timeout);
+static void socket_timeout(int signum);
 # endif
 
 typedef enum OPTION_choice {
@@ -140,6 +133,7 @@ typedef enum OPTION_choice {
     OPT_RESPOUT, OPT_PATH, OPT_ISSUER, OPT_CERT, OPT_SERIAL,
     OPT_INDEX, OPT_CA, OPT_NMIN, OPT_REQUEST, OPT_NDAYS, OPT_RSIGNER,
     OPT_RKEY, OPT_ROTHER, OPT_RMD, OPT_RSIGOPT, OPT_HEADER,
+    OPT_PASSIN,
     OPT_RCID,
     OPT_V_ENUM,
     OPT_MD,
@@ -186,6 +180,7 @@ const OPTIONS ocsp_options[] = {
     {"rsigner", OPT_RSIGNER, '<',
      "Responder certificate to sign responses with"},
     {"rkey", OPT_RKEY, '<', "Responder key to sign responses with"},
+    {"passin", OPT_PASSIN, 's', "Responder key pass phrase source"},
     {"rother", OPT_ROTHER, '<', "Other certificates to include in response"},
     {"rmd", OPT_RMD, 's', "Digest Algorithm to use in signature of OCSP response"},
     {"rsigopt", OPT_RSIGOPT, 's', "OCSP response signature parameter in n:v form"},
@@ -266,6 +261,7 @@ int ocsp_main(int argc, char **argv)
     char *rca_filename = NULL, *reqin = NULL, *respin = NULL;
     char *reqout = NULL, *respout = NULL, *ridx_filename = NULL;
     char *rsignfile = NULL, *rkeyfile = NULL;
+    char *passinarg = NULL, *passin = NULL;
     char *sign_certfile = NULL, *verify_certfile = NULL, *rcertfile = NULL;
     char *signfile = NULL, *keyfile = NULL;
     char *thost = NULL, *tport = NULL, *tpath = NULL;
@@ -312,7 +308,8 @@ int ocsp_main(int argc, char **argv)
             OPENSSL_free(tport);
             OPENSSL_free(tpath);
             thost = tport = tpath = NULL;
-            if (!OCSP_parse_url(opt_arg(), &host, &port, &path, &use_ssl)) {
+            if (!OSSL_HTTP_parse_url(opt_arg(),
+                                     &host, &port, &path, &use_ssl)) {
                 BIO_printf(bio_err, "%s Error parsing URL\n", prog);
                 goto end;
             }
@@ -448,7 +445,8 @@ int ocsp_main(int argc, char **argv)
                 if ((issuers = sk_X509_new_null()) == NULL)
                     goto end;
             }
-            sk_X509_push(issuers, issuer);
+            if (!sk_X509_push(issuers, issuer))
+                goto end;
             break;
         case OPT_CERT:
             X509_free(cert);
@@ -494,6 +492,9 @@ int ocsp_main(int argc, char **argv)
             break;
         case OPT_RKEY:
             rkeyfile = opt_arg();
+            break;
+        case OPT_PASSIN:
+            passinarg = opt_arg();
             break;
         case OPT_ROTHER:
             rcertfile = opt_arg();
@@ -597,7 +598,11 @@ int ocsp_main(int argc, char **argv)
                             "responder other certificates"))
                 goto end;
         }
-        rkey = load_key(rkeyfile, FORMAT_PEM, 0, NULL, NULL,
+        if (!app_passwd(passinarg, NULL, &passin, NULL)) {
+            BIO_printf(bio_err, "Error getting password\n");
+            goto end;
+        }
+        rkey = load_key(rkeyfile, FORMAT_PEM, 0, passin, NULL,
                         "responder private key");
         if (rkey == NULL)
             goto end;
@@ -622,7 +627,7 @@ int ocsp_main(int argc, char **argv)
     if (multi && acbio != NULL)
         spawn_loop();
     if (acbio != NULL && req_timeout > 0)
-        signal(SIGALRM, sock_timeout);
+        signal(SIGALRM, socket_timeout);
 #endif
 
     if (acbio != NULL)
@@ -1389,7 +1394,7 @@ static int urldecode(char *p)
 # endif
 
 # ifdef OCSP_DAEMON
-static void sock_timeout(int signum)
+static void socket_timeout(int signum)
 {
     if (acfd != (int)INVALID_SOCKET)
         (void)shutdown(acfd, SHUT_RD);
@@ -1530,133 +1535,34 @@ static int send_ocsp_response(BIO *cbio, OCSP_RESPONSE *resp)
 }
 
 # ifndef OPENSSL_NO_SOCK
-static OCSP_RESPONSE *query_responder(BIO *cbio, const char *host,
-                                      const char *path,
-                                      const STACK_OF(CONF_VALUE) *headers,
-                                      OCSP_REQUEST *req, int req_timeout)
-{
-    int fd;
-    int rv;
-    int i;
-    int add_host = 1;
-    OCSP_REQ_CTX *ctx = NULL;
-    OCSP_RESPONSE *rsp = NULL;
-    fd_set confds;
-    struct timeval tv;
-
-    if (req_timeout != -1)
-        BIO_set_nbio(cbio, 1);
-
-    rv = BIO_do_connect(cbio);
-
-    if ((rv <= 0) && ((req_timeout == -1) || !BIO_should_retry(cbio))) {
-        BIO_puts(bio_err, "Error connecting BIO\n");
-        return NULL;
-    }
-
-    if (BIO_get_fd(cbio, &fd) < 0) {
-        BIO_puts(bio_err, "Can't get connection fd\n");
-        goto err;
-    }
-
-    if (req_timeout != -1 && rv <= 0) {
-        FD_ZERO(&confds);
-        openssl_fdset(fd, &confds);
-        tv.tv_usec = 0;
-        tv.tv_sec = req_timeout;
-        rv = select(fd + 1, NULL, (void *)&confds, NULL, &tv);
-        if (rv == 0) {
-            BIO_puts(bio_err, "Timeout on connect\n");
-            return NULL;
-        }
-    }
-
-    ctx = OCSP_sendreq_new(cbio, path, NULL, -1);
-    if (ctx == NULL)
-        return NULL;
-
-    for (i = 0; i < sk_CONF_VALUE_num(headers); i++) {
-        CONF_VALUE *hdr = sk_CONF_VALUE_value(headers, i);
-        if (add_host == 1 && strcasecmp("host", hdr->name) == 0)
-            add_host = 0;
-        if (!OCSP_REQ_CTX_add1_header(ctx, hdr->name, hdr->value))
-            goto err;
-    }
-
-    if (add_host == 1 && OCSP_REQ_CTX_add1_header(ctx, "Host", host) == 0)
-        goto err;
-
-    if (!OCSP_REQ_CTX_set1_req(ctx, req))
-        goto err;
-
-    for (;;) {
-        rv = OCSP_sendreq_nbio(&rsp, ctx);
-        if (rv != -1)
-            break;
-        if (req_timeout == -1)
-            continue;
-        FD_ZERO(&confds);
-        openssl_fdset(fd, &confds);
-        tv.tv_usec = 0;
-        tv.tv_sec = req_timeout;
-        if (BIO_should_read(cbio)) {
-            rv = select(fd + 1, (void *)&confds, NULL, NULL, &tv);
-        } else if (BIO_should_write(cbio)) {
-            rv = select(fd + 1, NULL, (void *)&confds, NULL, &tv);
-        } else {
-            BIO_puts(bio_err, "Unexpected retry condition\n");
-            goto err;
-        }
-        if (rv == 0) {
-            BIO_puts(bio_err, "Timeout on request\n");
-            break;
-        }
-        if (rv == -1) {
-            BIO_puts(bio_err, "Select error\n");
-            break;
-        }
-
-    }
- err:
-    OCSP_REQ_CTX_free(ctx);
-
-    return rsp;
-}
-
 OCSP_RESPONSE *process_responder(OCSP_REQUEST *req,
                                  const char *host, const char *path,
                                  const char *port, int use_ssl,
                                  STACK_OF(CONF_VALUE) *headers,
                                  int req_timeout)
 {
-    BIO *cbio = NULL;
     SSL_CTX *ctx = NULL;
     OCSP_RESPONSE *resp = NULL;
 
-    cbio = BIO_new_connect(host);
-    if (cbio == NULL) {
-        BIO_printf(bio_err, "Error creating connect BIO\n");
-        goto end;
-    }
-    if (port != NULL)
-        BIO_set_conn_port(cbio, port);
     if (use_ssl == 1) {
-        BIO *sbio;
         ctx = SSL_CTX_new(TLS_client_method());
         if (ctx == NULL) {
             BIO_printf(bio_err, "Error creating SSL context.\n");
             goto end;
         }
         SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
-        sbio = BIO_new_ssl(ctx, 1);
-        cbio = BIO_push(sbio, cbio);
     }
 
-    resp = query_responder(cbio, host, path, headers, req, req_timeout);
+    resp = (OCSP_RESPONSE *)
+        app_http_post_asn1(host, port, path, NULL, NULL /* no proxy used */,
+                           ctx, headers, "application/ocsp-request",
+                           (ASN1_VALUE *)req, ASN1_ITEM_rptr(OCSP_REQUEST),
+                           req_timeout, ASN1_ITEM_rptr(OCSP_RESPONSE));
+
     if (resp == NULL)
         BIO_printf(bio_err, "Error querying OCSP responder\n");
+
  end:
-    BIO_free_all(cbio);
     SSL_CTX_free(ctx);
     return resp;
 }

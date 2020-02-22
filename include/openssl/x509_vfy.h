@@ -67,6 +67,7 @@ DEFINE_STACK_OF(X509_VERIFY_PARAM)
 int X509_STORE_set_depth(X509_STORE *store, int depth);
 
 typedef int (*X509_STORE_CTX_verify_cb)(int, X509_STORE_CTX *);
+int X509_STORE_CTX_print_verify_cb(int ok, X509_STORE_CTX *ctx);
 typedef int (*X509_STORE_CTX_verify_fn)(X509_STORE_CTX *);
 typedef int (*X509_STORE_CTX_get_issuer_fn)(X509 **issuer,
                                             X509_STORE_CTX *ctx, X509 *x);
@@ -287,8 +288,9 @@ void X509_STORE_free(X509_STORE *v);
 int X509_STORE_lock(X509_STORE *ctx);
 int X509_STORE_unlock(X509_STORE *ctx);
 int X509_STORE_up_ref(X509_STORE *v);
-STACK_OF(X509_OBJECT) *X509_STORE_get0_objects(X509_STORE *v);
 
+STACK_OF(X509_OBJECT) *X509_STORE_get0_objects(X509_STORE *v);
+STACK_OF(X509) *X509_STORE_get1_all_certs(X509_STORE *st);
 STACK_OF(X509) *X509_STORE_CTX_get1_certs(X509_STORE_CTX *st, X509_NAME *nm);
 STACK_OF(X509_CRL) *X509_STORE_CTX_get1_crls(X509_STORE_CTX *st, X509_NAME *nm);
 int X509_STORE_set_flags(X509_STORE *ctx, unsigned long flags);
@@ -558,7 +560,7 @@ int X509_VERIFY_PARAM_set_flags(X509_VERIFY_PARAM *param,
                                 unsigned long flags);
 int X509_VERIFY_PARAM_clear_flags(X509_VERIFY_PARAM *param,
                                   unsigned long flags);
-unsigned long X509_VERIFY_PARAM_get_flags(X509_VERIFY_PARAM *param);
+unsigned long X509_VERIFY_PARAM_get_flags(const X509_VERIFY_PARAM *param);
 int X509_VERIFY_PARAM_set_purpose(X509_VERIFY_PARAM *param, int purpose);
 int X509_VERIFY_PARAM_set_trust(X509_VERIFY_PARAM *param, int trust);
 void X509_VERIFY_PARAM_set_depth(X509_VERIFY_PARAM *param, int depth);

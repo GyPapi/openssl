@@ -364,6 +364,9 @@ static void list_options_for_command(const char *command)
     for ( ; o->name != NULL; o++) {
         char c = o->valtype;
 
+        if (o->name == OPT_PARAM_STR)
+            break;
+
         if (o->name == OPT_HELP_STR
                 || o->name == OPT_MORE_STR
                 || o->name == OPT_SECTION_STR
@@ -626,6 +629,7 @@ const OPTIONS list_options[] = {
     {"1", OPT_ONE, '-', "List in one column"},
     {"verbose", OPT_VERBOSE, '-', "Verbose listing"},
     {"commands", OPT_COMMANDS, '-', "List of standard commands"},
+    {"standard-commands", OPT_COMMANDS, '-', "List of standard commands"},
     {"digest-commands", OPT_DIGEST_COMMANDS, '-',
      "List of message digest commands"},
     {"digest-algorithms", OPT_DIGEST_ALGORITHMS, '-',

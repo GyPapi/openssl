@@ -25,18 +25,23 @@
 
 /*
  * Generic deprecation macro
+  *
+  * If OPENSSL_SUPPRESS_DEPRECATED is defined, then DECLARE_DEPRECATED
+  * becomes a no-op
  */
 # ifndef DECLARE_DEPRECATED
 #  define DECLARE_DEPRECATED(f)   f;
-#  ifdef __GNUC__
-#   if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#    undef DECLARE_DEPRECATED
-#    define DECLARE_DEPRECATED(f)    f __attribute__ ((deprecated));
-#   endif
-#  elif defined(__SUNPRO_C)
-#   if (__SUNPRO_C >= 0x5130)
-#    undef DECLARE_DEPRECATED
-#    define DECLARE_DEPRECATED(f)    f __attribute__ ((deprecated));
+#  ifndef OPENSSL_SUPPRESS_DEPRECATED
+#   ifdef __GNUC__
+#    if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#     undef DECLARE_DEPRECATED
+#     define DECLARE_DEPRECATED(f)    f __attribute__ ((deprecated));
+#    endif
+#   elif defined(__SUNPRO_C)
+#    if (__SUNPRO_C >= 0x5130)
+#     undef DECLARE_DEPRECATED
+#     define DECLARE_DEPRECATED(f)    f __attribute__ ((deprecated));
+#    endif
 #   endif
 #  endif
 # endif

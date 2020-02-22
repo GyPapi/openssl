@@ -7,6 +7,9 @@
  * https://www.openssl.org/source/license.html
  */
 
+/* We need to use some deprecated APIs */
+#define OPENSSL_SUPPRESS_DEPRECATED
+
 #include <openssl/opensslconf.h>
 #ifdef OPENSSL_NO_DH
 NON_EMPTY_TRANSLATION_UNIT
@@ -42,7 +45,7 @@ typedef enum OPTION_choice {
 } OPTION_CHOICE;
 
 const OPTIONS dhparam_options[] = {
-    {OPT_HELP_STR, 1, '-', "Usage: %s [flags] [numbits]\n"},
+    {OPT_HELP_STR, 1, '-', "Usage: %s [options] [numbits]\n"},
 
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
@@ -70,6 +73,9 @@ const OPTIONS dhparam_options[] = {
     {"5", OPT_5, '-', "Generate parameters using 5 as the generator value"},
 
     OPT_R_OPTIONS,
+
+    OPT_PARAMETERS(),
+    {"numbits", 0, 0, "Number of bits if generating parameters (optional)"},
     {NULL}
 };
 

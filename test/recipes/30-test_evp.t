@@ -31,9 +31,9 @@ my @configs = ( $defaultcnf );
 # Only add the FIPS config if the FIPS module has been built
 push @configs, 'fips.cnf' unless $no_fips;
 
-my @files = qw( evpciph.txt evpdigest.txt );
+my @files = qw( evpciph.txt evpdigest.txt evppkey.txt);
 my @defltfiles = qw( evpencod.txt evpkdf.txt evppkey_kdf.txt evpmac.txt
-    evppbe.txt evppkey.txt evppkey_ecc.txt evpcase.txt evpccmcavs.txt );
+    evppbe.txt evppkey_ecc.txt evpcase.txt evpccmcavs.txt );
 my @ideafiles = qw( evpciph_idea.txt );
 push @defltfiles, @ideafiles unless disabled("idea");
 
@@ -64,6 +64,15 @@ push @defltfiles, @rc2files unless disabled("rc2");
 my @chachafiles = qw( evpciph_chacha.txt );
 push @defltfiles, @chachafiles unless disabled("chacha");
 
+my @bffiles = qw( evpciph_bf.txt );
+push @defltfiles, @bffiles unless disabled("bf");
+
+my @md2files = qw( evpmd_md2.txt );
+push @defltfiles, @md2files unless disabled("md2");
+
+my @mdc2files = qw( evpmd_mdc2.txt );
+push @defltfiles, @mdc2files unless disabled("mdc2");
+
 plan tests =>
     ($no_fips ? 0 : 1)          # FIPS install test
     + (scalar(@configs) * scalar(@files))
@@ -80,7 +89,7 @@ unless ($no_fips) {
                 '-provider_name', 'fips', '-mac_name', 'HMAC',
                 '-macopt', 'digest:SHA256', '-macopt', 'hexkey:00',
                 '-section_name', 'fips_sect'])),
-       "fipinstall");
+       "fipsinstall");
 }
 
 foreach (@configs) {
